@@ -33,11 +33,28 @@ const limiter = rateLimit({
 app.use(limiter);
 
 //app.use(cors());
+/*
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true
 }));
+*/
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://biolink-client.vercel.app"
+];
 
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS blocked"));
+    }
+  },
+  credentials: true
+}));
 
 
 
