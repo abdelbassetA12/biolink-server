@@ -85,7 +85,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 
 
-
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
 
 // تشغيل السيرفر
 server.listen(PORT, () => {
