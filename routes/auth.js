@@ -68,7 +68,8 @@ Math.floor(100000 + Math.random() * 900000).toString();
 
 const info = await transporter.sendMail({
 
-  from: process.env.EMAIL_USER,
+  //from: process.env.EMAIL_USER,
+   from: '"Qevora" <abdelbassetelhajiri02@gmail.com>',
 
   to: email,
 
