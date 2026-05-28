@@ -1,19 +1,7 @@
 
 const nodemailer = require('nodemailer');
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
-transporter.verify().then(() => {
-  console.log("MAIL SERVER READY");
-}).catch(err => {
-  console.log("MAIL ERROR:", err.message);
-});
-/*
+
 
 const transporter = nodemailer.createTransport({
  
@@ -42,7 +30,7 @@ transporter.verify((error, success) => {
   }
 
 });
-*/
+
 
 module.exports = transporter;
 /*
