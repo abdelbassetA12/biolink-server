@@ -23,9 +23,14 @@ module.exports = mongoose.model('User', {
     required: true,
     minlength: 6
   },
+    isVerified: {
+    type: Boolean,
+    default: false
+  },
 
-  //username: String,
-  //password: String,
+verificationCode: String,
+verificationCodeExpires: Date,
+
   bio: String,
   avatar: String,
   theme: { type: String, default: 'theme1' },

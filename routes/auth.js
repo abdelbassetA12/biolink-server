@@ -1,3 +1,4 @@
+
 const router = require('express').Router();
 const User = require('../models/User');
 // ❌ هذا غير موجود عندك
@@ -5,6 +6,9 @@ const Link = require('../models/Link');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
+
+
+const transporter = require('../utils/mail');
 
 
 
@@ -41,16 +45,68 @@ router.post('/register', async (req, res) => {
     // HASH PASSWORD
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // GENERATE TOKEN
+//const verificationToken = uuidv4();
+const verificationCode =
+Math.floor(100000 + Math.random() * 900000).toString();
+
+
     // CREATE USER
-    const user = await User.create({
-      username,
-      email,
-      password: hashedPassword
-    });
+    
+   const user = await User.create({
+  username,
+  email,
+  password: hashedPassword,
+   verificationCode,
+
+  verificationCodeExpires:
+    Date.now() + 1000 * 60 * 10,
+  
+  isVerified: false
+});
+
+
+const info = await transporter.sendMail({
+
+  from: process.env.EMAIL_USER,
+
+  to: email,
+
+  subject: "Verification Code",
+
+  html: `
+    <div style="font-family:Arial;padding:20px">
+
+      <h2>
+        BioLink Verification
+      </h2>
+
+      <p>
+        Your verification code is:
+      </p>
+
+      <h1
+        style="
+          letter-spacing:5px;
+          color:#6366f1;
+        "
+      >
+        ${verificationCode}
+      </h1>
+
+      <p>
+        This code expires in 10 minutes.
+      </p>
+
+    </div>
+  `
+});
+console.log(info);
+    
 
     res.json({
-      message: 'Account created'
-    });
+  message: 'Account created. Please verify your email.'
+});
 
   } catch (err) {
 
@@ -60,25 +116,64 @@ router.post('/register', async (req, res) => {
 
   }
 });
-/*
-router.post('/register', async (req, res) => {
+
+router.post('/verify-code', async (req, res) => {
+
   try {
-    const { username, password } = req.body;
 
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const { email, code } = req.body;
 
-    const user = await User.create({
-      ...req.body,
-      password: hashedPassword
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'User not found'
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        error: 'Account already verified'
+      });
+    }
+
+    if (user.verificationCode !== code) {
+      return res.status(400).json({
+        error: 'Invalid code'
+      });
+    }
+
+    if (
+      user.verificationCodeExpires < Date.now()
+    ) {
+
+      return res.status(400).json({
+        error: 'Code expired'
+      });
+
+    }
+
+    user.isVerified = true;
+
+    user.verificationCode = null;
+    user.verificationCodeExpires = null;
+
+    await user.save();
+
+    res.json({
+      message: 'Email verified successfully'
     });
 
-    res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    res.status(500).json({
+      error: err.message
+    });
+
   }
+
 });
-*/
+
 
 
 router.post('/login', async (req, res) => {
@@ -99,6 +194,7 @@ router.post('/login', async (req, res) => {
         error: 'User not found'
       });
     }
+   
 
     const isMatch = await bcrypt.compare(
       password,
