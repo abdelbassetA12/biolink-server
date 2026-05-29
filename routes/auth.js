@@ -437,6 +437,103 @@ router.post('/forgot-password', async (req, res) => {
 
 });
 
+router.post('/verify-reset-code', async (req, res) => {
+
+  try {
+
+    const { email, code } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+
+      return res.status(400).json({
+        error: 'User not found'
+      });
+
+    }
+
+    if (
+      user.resetPasswordCode !== code
+    ) {
+
+      return res.status(400).json({
+        error: 'Invalid code'
+      });
+
+    }
+
+    if (
+      user.resetPasswordExpires < Date.now()
+    ) {
+
+      return res.status(400).json({
+        error: 'Code expired'
+      });
+
+    }
+
+    res.json({
+      success: true
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+router.post('/update-password', async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      newPassword
+    } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+
+      return res.status(400).json({
+        error: 'User not found'
+      });
+
+    }
+
+    // HASH PASSWORD
+    const hashedPassword =
+      await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    // CLEAR RESET DATA
+    user.resetPasswordCode = null;
+
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    res.json({
+      message: 'Password updated'
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+/*
 router.post('/reset-password', async (req, res) => {
 
   try {
@@ -506,6 +603,7 @@ router.post('/reset-password', async (req, res) => {
   }
 
 });
+*/
 
 router.delete('/delete-account', auth, async (req, res) => {
   await User.findByIdAndDelete(req.user.id);
