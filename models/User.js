@@ -30,6 +30,8 @@ module.exports = mongoose.model('User', {
 
 verificationCode: String,
 verificationCodeExpires: Date,
+resetPasswordCode: String,
+resetPasswordExpires: Date,
 
   bio: String,
   avatar: String,

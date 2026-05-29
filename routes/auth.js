@@ -196,7 +196,14 @@ router.post('/login', async (req, res) => {
       });
     }
    
+   if (!user.isVerified) {
 
+  return res.status(403).json({
+    error: 'EMAIL_NOT_VERIFIED',
+    email: user.email
+  });
+
+}
     const isMatch = await bcrypt.compare(
       password,
       user.password
@@ -275,6 +282,155 @@ router.post('/change-password', auth, async (req, res) => {
   await user.save();
 
   res.json({ message: "Password updated" });
+});
+
+router.post('/forgot-password', async (req, res) => {
+
+  try {
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email required'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    // لا نكشف هل الحساب موجود أم لا
+    if (!user) {
+      return res.json({
+        message: 'If this email exists, a reset code was sent.'
+      });
+    }
+
+    // GENERATE CODE
+    const resetCode =
+      Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.resetPasswordCode = resetCode;
+
+    user.resetPasswordExpires =
+      Date.now() + 1000 * 60 * 10;
+
+    await user.save();
+
+    // SEND EMAIL
+    await transporter.sendMail({
+
+      from: '"Qevora" <abdelbassetelhajiri02@gmail.com>',
+
+      to: email,
+
+      subject: 'Reset Password Code',
+
+      html: `
+        <div style="font-family:Arial;padding:20px">
+
+          <h2>Password Reset</h2>
+
+          <p>Your password reset code is:</p>
+
+          <h1
+            style="
+              color:#6366f1;
+              letter-spacing:5px;
+            "
+          >
+            ${resetCode}
+          </h1>
+
+          <p>
+            This code expires in 10 minutes.
+          </p>
+
+        </div>
+      `
+    });
+
+    res.json({
+      message: 'Reset code sent'
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
+router.post('/reset-password', async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      code,
+      newPassword
+    } = req.body;
+
+    if (
+      !email ||
+      !code ||
+      !newPassword
+    ) {
+      return res.status(400).json({
+        error: 'All fields required'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'User not found'
+      });
+    }
+
+    if (
+      user.resetPasswordCode !== code
+    ) {
+      return res.status(400).json({
+        error: 'Invalid code'
+      });
+    }
+
+    if (
+      user.resetPasswordExpires < Date.now()
+    ) {
+      return res.status(400).json({
+        error: 'Code expired'
+      });
+    }
+
+    // HASH NEW PASSWORD
+    const hashedPassword =
+      await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    // CLEAR RESET DATA
+    user.resetPasswordCode = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    res.json({
+      message: 'Password reset successful'
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
 });
 
 router.delete('/delete-account', auth, async (req, res) => {
