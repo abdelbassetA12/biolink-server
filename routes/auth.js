@@ -226,7 +226,8 @@ router.post('/login', async (req, res) => {
   // SEND EMAIL
   await transporter.sendMail({
 
-    from: `"Qevora" <${process.env.EMAIL_USER}>`,
+  
+     from: '"Qevora" <abdelbassetelhajiri02@gmail.com>',
 
     to: user.email,
 
