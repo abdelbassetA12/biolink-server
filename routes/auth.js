@@ -195,7 +195,77 @@ router.post('/login', async (req, res) => {
         error: 'User not found'
       });
     }
-   
+   if (!user.isVerified) {
+
+  // GENERATE NEW CODE
+  const verificationCode =
+    Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
+  // SAVE CODE
+  user.verificationCode = verificationCode;
+
+  user.verificationCodeExpires =
+    Date.now() + 1000 * 60 * 10;
+
+  await user.save();
+
+  // SEND EMAIL
+  await transporter.sendMail({
+
+    from: `"Qevora" <${process.env.EMAIL_USER}>`,
+
+    to: user.email,
+
+    subject: 'Verify Your Email',
+
+    html: `
+      <div
+        style="
+          font-family:Arial;
+          padding:20px;
+        "
+      >
+
+        <h2>
+          Email Verification
+        </h2>
+
+        <p>
+          Your verification code is:
+        </p>
+
+        <h1
+          style="
+            color:#6366f1;
+            letter-spacing:5px;
+          "
+        >
+          ${verificationCode}
+        </h1>
+
+        <p>
+          This code expires in 10 minutes.
+        </p>
+
+      </div>
+    `
+  });
+
+  return res.status(403).json({
+
+    error: 'EMAIL_NOT_VERIFIED',
+
+    email: user.email,
+
+    message:
+      'Verification code sent again'
+
+  });
+
+}
+/*
    if (!user.isVerified) {
 
   return res.status(403).json({
@@ -204,6 +274,7 @@ router.post('/login', async (req, res) => {
   });
 
 }
+  */
     const isMatch = await bcrypt.compare(
       password,
       user.password
