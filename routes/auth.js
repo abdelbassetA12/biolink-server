@@ -195,7 +195,19 @@ router.post('/login', async (req, res) => {
         error: 'User not found'
       });
     }
-   if (!user.isVerified) {
+  
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        error: 'Wrong password'
+      });
+    }
+
+     if (!user.isVerified) {
 
   // GENERATE NEW CODE
   const verificationCode =
@@ -275,16 +287,6 @@ router.post('/login', async (req, res) => {
 
 }
   */
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!isMatch) {
-      return res.status(400).json({
-        error: 'Wrong password'
-      });
-    }
 
     const token = jwt.sign(
       {
