@@ -1072,6 +1072,13 @@ router.get(
 
       });
 
+
+      const topLink = links.length
+  ? [...links].sort(
+      (a, b) => (b.clicks || 0) - (a.clicks || 0)
+    )[0]
+  : null;
+
       res.json({
 
         totalClicks,
@@ -1083,7 +1090,8 @@ router.get(
 
         countries,
 
-        links
+        links,
+         topLink
 
       });
 
